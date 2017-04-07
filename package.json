@@ -1,0 +1,48 @@
+{
+  "name": "iterables-ts",
+  "version": "0.1.0",
+  "repository": "St-Random/iterables-ts.git",
+  "description": "Custom generic Iterable, IterableIterator and LinkedList implemetation in TypeScript",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "tsc -p test/ && ava",
+    "test-rebuild": "npm run recompile-tests && ava",
+    "test-watch": "npm run recompile-tests && concurrently -k \"tsc -p test/ -w\" \"ava -w\"",
+    "test-report": "npm run recompile-tests && nyc --all ava --serial",
+
+    "recompile-tests": "rimraf test/sandbox/* && tsc -p test/"
+  },
+  "author": "St_Random",
+  "license": "0BSD",
+  "devDependencies": {
+    "typescript": "^2.2.2",
+    "tslint": "^4.5.1",
+
+    "rimraf": "^2.6.1",
+
+    "ava": "^0.18.2",
+    "sinon": "^2.1.0",
+    "@types/sinon": "^1.16.36",
+    "nyc": "^10.2.0"
+  },
+  "ava": {
+    "source": ["test/sandbox/src/**/*.js"],
+    "files": ["test/sandbox/test/**/*.spec.js"],
+    "verbose": true
+  },
+  "nyc": {
+    "include": [
+      "test/sandbox/src/**/*.js"
+    ],
+    "exclude": [
+      "node_modules",
+      "test/specs",
+      "test/sandbox/**/*.spec.js"
+    ],
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ],
+    "report-dir": "test/reports"
+  }
+}

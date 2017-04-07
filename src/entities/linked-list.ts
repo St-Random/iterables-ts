@@ -1,0 +1,261 @@
+import ILinkedList, {
+    IInternalLinkedListNode,
+    ILinkedListNode,
+} from '../interfaces/linked-list';
+import { IXBidirectedIterable } from '../interfaces/iterable';
+import { XBidirectedIterable } from './x-iterable';
+
+/*
+ * My very own linked list implementation.
+ * Fuck the bicycles! Fuck YAGNI! YOLO! YAY!
+ */
+
+class LinkedListNode<T> implements IInternalLinkedListNode<T> {
+    private _parent?: ILinkedList<T>;
+
+    public get parent() {
+        return this._parent;
+    }
+
+    public constructor(
+        parent: ILinkedList<T>, // Hail to circular references!
+        public value: T,
+        public prev?: IInternalLinkedListNode<T>,
+        public next?: IInternalLinkedListNode<T>
+    ) {
+        this._parent = parent;
+    }
+
+    /** Forbids append/prepend operations using this node */
+    public invalidate() {
+        // Oh, no, now he is an orphan. How sad ~sob-sob.
+        this._parent = undefined;
+    }
+}
+
+export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T>>
+    implements ILinkedList<T> {
+
+    private _length: number = 0;
+    private _first?: LinkedListNode<T>;
+    private _last?: LinkedListNode<T>;
+    // Nodes and values generators implementation
+    private *_forwardsNodesIterator() {
+        let current = this._first;
+        while (current) {
+            let reset = yield current;
+            current = !reset ? current.next : this._first;
+        }
+    }
+    private *_backwardsNodesIterator() {
+        let current = this._last;
+        while (current) {
+            let reset = yield current;
+            current = !reset ? current.prev : this._last;
+        }
+    }
+    private *_forwardsValuesIterator() {
+        let current = this._first;
+        while (current) {
+            let reset = yield current.value;
+            current = !reset ? current.next : this._first;
+        }
+    }
+    private *_backwardsValuesIterator() {
+        let current = this._last;
+        while (current) {
+            let reset = yield current.value;
+            current = !reset ? current.prev : this._last;
+        }
+    }
+
+    public readonly values: IXBidirectedIterable<T>;
+
+    public get length() {
+        return this._length;
+    }
+    public get first(): ILinkedListNode<T> | undefined {
+        return this._first;
+    }
+    public get last(): ILinkedListNode<T> | undefined {
+        return this._last;
+    }
+
+    public constructor(initValues?: Iterable<T>) {
+        super(() => this._forwardsNodesIterator(),
+              () => this._backwardsNodesIterator());
+        this.values = new XBidirectedIterable(
+            () => this._forwardsValuesIterator(),
+            () => this._backwardsValuesIterator());
+        if (initValues) {
+            this.appendMany(initValues);
+        }
+    }
+
+    /**
+     * Inserts element before given node or in the beginning of the list, if before is not specified;
+     * Returns reference to created node;
+     */
+    public prepend(value: T, before?: ILinkedListNode<T>): ILinkedListNode<T> {
+        this._verifyParent(before);
+        return this._prepend(new LinkedListNode(this, value),
+            before as IInternalLinkedListNode<T> | undefined);
+    }
+    /**
+     * Inserts element after given node or in the end of the list, if after is not specified;
+     * Returns reference to created node;
+     */
+    public append(value: T, after?: ILinkedListNode<T>): ILinkedListNode<T> {
+        this._verifyParent(after);
+        return this._append(new LinkedListNode(this, value),
+            after as IInternalLinkedListNode<T> | undefined);
+    }
+    /**
+     * Inserts elements collection before given node or in the beginning of the list, if before is not specified;
+     * Returns reference to the first node of collection or undefined if values are empty;
+     */
+    public prependMany(values: Iterable<T>, before?: ILinkedListNode<T>): ILinkedListNode<T> | undefined {
+        this._verifyParent(before);
+        let iterator = values[Symbol.iterator](),
+            current = iterator.next(),
+            firstNode: IInternalLinkedListNode<T> | undefined = undefined,
+            currentNode: IInternalLinkedListNode<T> | undefined = undefined;
+        if (!current.done) {
+            currentNode = firstNode = new LinkedListNode(this, current.value);
+            this._prepend(firstNode as IInternalLinkedListNode<T>, before as IInternalLinkedListNode<T>);
+        }
+        current = iterator.next();
+        while (!current.done) {
+            currentNode = this._append(new LinkedListNode(this, current.value), currentNode);
+            current = iterator.next();
+        }
+        return firstNode;
+    }
+    /**
+     * Inserts elements collection after given node or in the end of the list, if after is not specified;
+     * Returns reference to the last node of collection or undefined if values are empty;
+     */
+    public appendMany(values: Iterable<T>, after?: ILinkedListNode<T>): ILinkedListNode<T> | undefined {
+        this._verifyParent(after);
+        let currentNode = after;
+        for (let value of values) {
+            currentNode = this._append(new LinkedListNode(this, value),
+                currentNode as IInternalLinkedListNode<T>);
+        }
+        return currentNode !== after ? currentNode : undefined;
+    }
+
+    public reverse() {
+        let prev = this._first,
+            current = prev ? prev.next : undefined,
+            next: IInternalLinkedListNode<T> | undefined;
+        if (prev) {
+            prev.next = undefined;
+        }
+        while (current) {
+            next = current.next;
+
+            current.next = prev;
+            prev!.prev = current;
+
+            prev = current;
+            current = next;
+        }
+        if (prev) {
+            prev.prev = undefined;
+        }
+        [this._first, this._last] = [this._last, this._first];
+    }
+
+    public remove(value: T) {
+        let node = this.find(x => x.value === value);
+        if (node) {
+            this._remove(node as IInternalLinkedListNode<T>);
+        }
+    }
+    // Removes node without affecting the iteration
+    public removeNode(node: ILinkedListNode<T>) {
+        this._verifyParent(node);
+        this._remove(node as IInternalLinkedListNode<T>);
+    }
+    public removeFirst() {
+        if (this._first) {
+            this._remove(this._first);
+        }
+    }
+    public removeLast() {
+        if (this._last) {
+            this._remove(this._last);
+        }
+    }
+    public removeAll() {
+        for (let node of this) {
+            this._remove(node as IInternalLinkedListNode<T>);
+        }
+    }
+
+    // Mummy knows her children! Don't shit with her :3
+    private _verifyParent(node: ILinkedListNode<T> | undefined): void {
+        if (node && node.parent !== this) {
+            throw new ReferenceError('This is not my child!');
+        }
+    }
+    private _remove(node: IInternalLinkedListNode<T>) {
+        let prev = node.prev,
+            next = node.next;
+        if (prev) {
+            prev.next = next;
+        }
+        else {
+            this._first = next;
+        }
+        if (next) {
+            next.prev = prev;
+        }
+        else {
+            this._last = prev;
+        }
+        node.invalidate();
+        this._length--;
+    }
+    private _prepend(node: IInternalLinkedListNode<T>, before?: IInternalLinkedListNode<T>): IInternalLinkedListNode<T> {
+        let current = before || this._first;
+        if (current) {
+            let prev = current.prev;
+            current.prev = node;
+            node.next = current;
+            if (prev) {
+                node.prev = prev;
+                prev.next = node;
+            }
+            else {
+                this._first = node;
+            }
+        }
+        else {
+            this._first = this._last = node;
+        }
+        this._length++;
+        return node;
+    }
+    private _append(node: IInternalLinkedListNode<T>, after?: IInternalLinkedListNode<T>): IInternalLinkedListNode<T> {
+        let current = after || this._last;
+        if (current) {
+            let next = current.next;
+            current.next = node;
+            node.prev = current;
+            if (next) {
+                node.next = next;
+                next.prev = node;
+            }
+            else {
+                this._last = node;
+            }
+        }
+        else {
+            this._last = this._first = node;
+        }
+        this._length++;
+        return node;
+    }
+}

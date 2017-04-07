@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "../src/scripts/**/*",
+    "../test/specs/**/*"
+  ],
+  "compilerOptions": {
+    "module": "commonjs",
+    "rootDir": "../",
+    "outDir": "sandbox",
+    "sourceMap": true
+  }
+}

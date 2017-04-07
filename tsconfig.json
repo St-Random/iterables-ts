@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "target": "es6",
+    "moduleResolution": "node",
+    "alwaysStrict": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
