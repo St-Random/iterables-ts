@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "repository": "St-Random/iterables-ts.git",
   "description": "Custom generic Iterable, IterableIterator and LinkedList implemetation in TypeScript",
-  "main": "src/index.ts",
+  "typings": "./src/index.ts",
   "scripts": {
     "test": "tsc -p test/ && ava",
     "test-rebuild": "npm run recompile-tests && ava",
