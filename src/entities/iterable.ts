@@ -1,5 +1,4 @@
 import IIterable, {
-    IBidirectedIterable,
     IForEachCallback,
     IPredicateCallback,
     IMapCallback,
