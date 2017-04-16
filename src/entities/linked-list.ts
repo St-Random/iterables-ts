@@ -13,6 +13,13 @@ import { XBidirectedIterable } from './x-iterable';
  * Fuck the bicycles! Fuck YAGNI! YOLO! YAY!
  */
 
+class InvalidNodeOperationError extends Error {
+    constructor(message?: string) {
+        message = message || 'This is not my child!';
+        super(message);
+    }
+}
+
 class LinkedListNode<T> implements IInternalLinkedListNode<T> {
     private _parent?: ILinkedList<T>;
 
@@ -100,32 +107,36 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
      * Returns reference to created node;
      */
     public prepend(value: T, before?: ILinkedListNode<T>): ILinkedListNode<T> {
-        this._verifyParent(before);
-        return this._prepend(new LinkedListNode<T>(this, value),
-            before as IInternalLinkedListNode<T> | undefined);
+        if (before && !this._isThisNode(before)) {
+            throw new InvalidNodeOperationError();
+        }
+        return this._prepend(new LinkedListNode<T>(this, value), before);
     }
     /**
      * Inserts element after given node or in the end of the list, if after is not specified;
      * Returns reference to created node;
      */
     public append(value: T, after?: ILinkedListNode<T>): ILinkedListNode<T> {
-        this._verifyParent(after);
-        return this._append(new LinkedListNode<T>(this, value),
-            after as IInternalLinkedListNode<T> | undefined);
+        if (after && !this._isThisNode(after)) {
+            throw new InvalidNodeOperationError();
+        }
+        return this._append(new LinkedListNode<T>(this, value), after);
     }
     /**
      * Inserts elements collection before given node or in the beginning of the list, if before is not specified;
      * Returns reference to the first node of collection or undefined if values are empty;
      */
     public prependMany(values: Iterable<T>, before?: ILinkedListNode<T>): ILinkedListNode<T> | undefined {
-        this._verifyParent(before);
+        if (before && !this._isThisNode(before)) {
+            throw new InvalidNodeOperationError();
+        }
         let iterator = values[Symbol.iterator](),
             current = iterator.next(),
             firstNode: IInternalLinkedListNode<T> | undefined = undefined,
             currentNode: IInternalLinkedListNode<T> | undefined = undefined;
         if (!current.done) {
             currentNode = firstNode = new LinkedListNode<T>(this, current.value);
-            this._prepend(firstNode as IInternalLinkedListNode<T>, before as IInternalLinkedListNode<T>);
+            this._prepend(firstNode, before);
         }
         current = iterator.next();
         while (!current.done) {
@@ -139,11 +150,12 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
      * Returns reference to the last node of collection or undefined if values are empty;
      */
     public appendMany(values: Iterable<T>, after?: ILinkedListNode<T>): ILinkedListNode<T> | undefined {
-        this._verifyParent(after);
+        if (after && !this._isThisNode(after)) {
+            throw new InvalidNodeOperationError();
+        }
         let currentNode = after;
         for (let value of values) {
-            currentNode = this._append(new LinkedListNode<T>(this, value),
-                currentNode as IInternalLinkedListNode<T>);
+            currentNode = this._append(new LinkedListNode<T>(this, value), currentNode);
         }
         return currentNode !== after ? currentNode : undefined;
     }
@@ -152,9 +164,6 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         let prev = this._first,
             current = prev ? prev.next : undefined,
             next: IInternalLinkedListNode<T> | undefined;
-        if (prev) {
-            prev.next = undefined;
-        }
         while (current) {
             next = current.next;
 
@@ -164,10 +173,11 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
             prev = current;
             current = next;
         }
-        if (prev) {
-            prev.prev = undefined;
-        }
         [this._first, this._last] = [this._last, this._first];
+        if (this._first) {
+            this._first.prev = undefined;
+            this._last!.next = undefined;
+        }
     }
 
     public removeFirst() {
@@ -215,15 +225,9 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         return this;
     }
 
-    // Internal node typeguard
+    // Internal node typeguard; Mummy knows her children. Don't shit with her!
     private _isThisNode(node: any): node is IInternalLinkedListNode<T> {
         return (node instanceof LinkedListNode) && node.parent === this;
-    }
-    // Mummy knows her children! Don't shit with her :3
-    private _verifyParent(node: ILinkedListNode<T> | undefined): void {
-        if (node && node.parent !== this) {
-            throw new ReferenceError('This is not my child!');
-        }
     }
     private _remove(node: IInternalLinkedListNode<T>) {
         let prev = node.prev,
