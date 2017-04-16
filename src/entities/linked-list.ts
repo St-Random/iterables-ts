@@ -1,12 +1,12 @@
-import ILinkedList, {
-    IInternalLinkedListNode,
-    ILinkedListNode
-} from '../interfaces/linked-list';
 import {
     IXBidirectedIterable,
     IPredicateCallback
 } from '../interfaces/iterable';
 import { XBidirectedIterable } from './x-iterable';
+import ILinkedList, {
+    IInternalLinkedListNode,
+    ILinkedListNode
+} from '../interfaces/linked-list';
 
 /*
  * My very own linked list implementation.

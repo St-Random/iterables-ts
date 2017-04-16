@@ -1,6 +1,6 @@
 import IIterable, {
-    IForEachCallback,
     IPredicateCallback,
+    IForEachCallback,
     IMapCallback,
     IReduceCallback
 } from '../interfaces/iterable';

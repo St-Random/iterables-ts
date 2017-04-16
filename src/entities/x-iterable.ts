@@ -1,4 +1,3 @@
-import AbstractIterable from './iterable';
 import {
     IXIterable,
     IXIterableIterator,
@@ -6,6 +5,7 @@ import {
     IMapCallback,
     IPredicateCallback
 } from '../interfaces/iterable';
+import AbstractIterable from './iterable';
 
 type IteratorExpression<T> = () => IterableIterator<T>;
 
