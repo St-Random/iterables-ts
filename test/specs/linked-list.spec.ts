@@ -2,7 +2,7 @@ import test from 'ava';
 import * as sinon from 'sinon';
 import LinkedList from '../../src/entities/linked-list';
 
-test('Linked list creates correctly', t => {
+test('Linked list is created correctly', t => {
     let emptyList = new LinkedList<number>();
     t.is(emptyList.first, undefined);
     t.is(emptyList.last, undefined);
@@ -77,24 +77,47 @@ test('Linked list reverses correctly', t => {
 });
 
 test('Linked list removes nodes correctly', t => {
-    let list = new LinkedList([1, 2, 3, 4, 5]);
+    let list = new LinkedList([1, 2, 3]),
+        truthyStub = sinon.stub().returns(true),
+        falsyStub = sinon.stub().returns(false);
+    // removes all functions called correctly
+    list.removeAll(falsyStub);
+    t.true(falsyStub.calledThrice);
+    t.deepEqual([...list.values], [1, 2, 3]);
+    list.removeAll(truthyStub);
+    t.true(truthyStub.calledThrice);
+    t.deepEqual([...list.values], []);
+    // removes duplicate values
+    list = new LinkedList([7, 1, 2, 3, 6, 4, 5, 6, 7, 7]);
+    list.remove(6);
+    t.deepEqual([...list.values], [7, 1, 2, 3, 4, 5, 7, 7]);
+    list.removeAll(x => x.value === 7);
+    t.deepEqual([...list.values], [1, 2, 3, 4, 5]);
+    // removal methods testing
     list.removeFirst();
     t.deepEqual([...list.values], [2, 3, 4, 5]);
     list.removeLast();
     t.deepEqual([...list.values], [2, 3, 4]);
-    list.removeNode(list.first!.next!);
+    list.remove(list.first!.next!);
     t.deepEqual([...list.values], [2, 4]);
     list.remove(4);
     t.deepEqual([...list.values], [2]);
     list.removeLast();
     t.deepEqual([...list.values], []);
-    list.appendMany([2, 3, 4]);
+    // removal of deleted nodes does nothing
+    list.appendMany([1, 2, 3, 4]);
+    let node = list.last!.prev!;
+    list.remove(node);
+    list.remove(node);
+    t.deepEqual([...list.values], [1, 2, 4]);
+    // removal from empty list work correctly
     list.removeAll();
     t.deepEqual([...list.values], []);
     list.removeFirst();
     list.removeLast();
     list.remove(42);
     list.removeAll();
+    list.removeAll(truthyStub);
     t.deepEqual([...list.values], []);
 });
 
@@ -102,7 +125,7 @@ test('Linked list allows mutations during iteration', t => {
     let list = new LinkedList([1, 2, 3, 4, 5]);
     list.forEach((x, i) => {
         if (i! > 2) {
-            list.removeNode(x);
+            list.remove(x);
         }
     });
     t.deepEqual([...list.values], [1, 2, 3]);
@@ -116,25 +139,28 @@ test('Linked list allows mutations during iteration', t => {
     t.deepEqual([...list.values], [1, 2, 3, 4, 5]);
 });
 
-test('Linked list doesn\'t allow remove/append/prepend operations on deleted nodes', t => {
+test('Linked list doesn\'t allow append/prepend operations on deleted nodes', t => {
     let list = new LinkedList([1, 2, 3, 4, 5]),
         node = list.first!.next!;
-    list.removeNode(node);
+    list.remove(node);
     t.truthy(node);
     t.is(node.prev, list.first);
     t.is(node.next, list.first!.next);
-    t.throws(() => list.removeNode(node));
     t.throws(() => list.append(1, node));
     t.throws(() => list.appendMany([1, 2], node));
     t.throws(() => list.prepend(1, node));
     t.throws(() => list.prependMany([1, 2], node));
 });
 
-test('Linked list doesn\'t allow remove/append/prepend operations on nodes from other lists', t => {
+test('Linked list doesn\'t allow append/prepend operations on nodes\
+ from other lists, removal does nothing', t => {
+
     let list1 = new LinkedList([1, 2, 3, 4, 5]),
         list2 = new LinkedList([1, 2, 3, 4, 5]),
         node = list2.first!;
-    t.throws(() => list1.removeNode(node));
+    list1.remove(node);
+    t.deepEqual([...list1.values], [1, 2, 3, 4, 5]);
+
     t.throws(() => list1.append(1, node));
     t.throws(() => list1.appendMany([1, 2], node));
     t.throws(() => list1.prepend(1, node));

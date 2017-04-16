@@ -1,4 +1,4 @@
-import { IXBidirectedIterable } from './iterable';
+import { IXBidirectedIterable, IPredicateCallback } from './iterable';
 
 /** Interface for manual nodes iteration */
 export interface ILinkedListNode<T> {
@@ -57,12 +57,16 @@ interface ILinkedList<T> extends IXBidirectedIterable<ILinkedListNode<T>> {
 
     reverse(): void;
 
-    remove(value: T): void;
-    removeNode(node: ILinkedListNode<T>): void;
+    removeFirst(): ILinkedList<T>;
+    removeLast(): ILinkedList<T>;
     // remove(index: number): void;
-    removeFirst(): void;
-    removeLast(): void;
-    removeAll(): void;
+    remove(value: T): ILinkedList<T>;
+    remove(node: ILinkedListNode<T>): ILinkedList<T>;
+    removeMany(values: Iterable<T>): ILinkedList<T>;
+    removeMany(nodes: Iterable<ILinkedListNode<T>>): ILinkedList<T>;
+    removeAll(): ILinkedList<T>;
+    /** Removes all nodes that satisfy condition */
+    removeAll(callback: IPredicateCallback<ILinkedListNode<T>>, thisArg?: any): ILinkedList<T>;
 }
 
 export default ILinkedList;
