@@ -226,7 +226,7 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
     }
 
     // Internal node typeguard; Mummy knows her children. Don't shit with her!
-    private _isThisNode(node: any): node is IInternalLinkedListNode<T> {
+    protected _isThisNode(node: any): node is IInternalLinkedListNode<T> {
         return (node instanceof LinkedListNode) && node.parent === this;
     }
     private _remove(node: IInternalLinkedListNode<T>) {
