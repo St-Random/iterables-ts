@@ -1,6 +1,6 @@
 {
   "name": "iterables-ts",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": "St-Random/iterables-ts.git",
   "description": "Custom generic Iterable, IterableIterator and LinkedList implemetation in TypeScript",
   "typings": "./src/index.ts",
@@ -15,7 +15,7 @@
   "author": "St_Random",
   "license": "0BSD",
   "devDependencies": {
-    "typescript": "^2.2.2",
+    "typescript": "^2.3.2",
     "tslint": "^4.5.1",
 
     "rimraf": "^2.6.1",

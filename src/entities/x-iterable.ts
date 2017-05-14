@@ -1,10 +1,11 @@
 import {
-    IXIterable,
-    IXIterableIterator,
-    IXBidirectedIterable,
     IMapCallback,
     IPredicateCallback
 } from '../interfaces/iterable';
+import IXIterable, {
+    IXIterableIterator,
+    IXBidirectedIterable,
+} from '../interfaces/x-iterable';
 import AbstractIterable from './iterable';
 
 type IteratorExpression<T> = () => IterableIterator<T>;

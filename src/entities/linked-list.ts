@@ -1,17 +1,6 @@
-import {
-    IXBidirectedIterable,
-    IPredicateCallback
-} from '../interfaces/iterable';
+import { IPredicateCallback} from '../interfaces/iterable';
+import { IXBidirectedIterable } from '../interfaces/x-iterable';
 import { XBidirectedIterable } from './x-iterable';
-import ILinkedList, {
-    IInternalLinkedListNode,
-    ILinkedListNode
-} from '../interfaces/linked-list';
-
-/*
- * My very own linked list implementation.
- * Fuck the bicycles! Fuck YAGNI! YOLO! YAY!
- */
 
 class InvalidNodeOperationError extends Error {
     constructor(message?: string) {
@@ -20,18 +9,31 @@ class InvalidNodeOperationError extends Error {
     }
 }
 
-class LinkedListNode<T> implements IInternalLinkedListNode<T> {
-    private _parent?: ILinkedList<T>;
+/*
+ * My very own linked list implementation.
+ * Fuck the bicycles! Fuck YAGNI! YOLO! YAY!
+ */
+
+/** Interface for manual nodes iteration */
+export interface ILinkedListNode<T> {
+    readonly parent: LinkedList<T> | undefined;
+    readonly prev?: ILinkedListNode<T>;
+    readonly next?: ILinkedListNode<T>;
+    value: T;
+}
+
+class LinkedListNode<T> implements ILinkedListNode<T> {
+    private _parent?: LinkedList<T>;
 
     public get parent() {
         return this._parent;
     }
 
     public constructor(
-        parent: ILinkedList<T>, // Hail to circular references!
+        parent: LinkedList<T>, // Hail to circular references!
         public value: T,
-        public prev?: IInternalLinkedListNode<T>,
-        public next?: IInternalLinkedListNode<T>
+        public prev?: LinkedListNode<T>,
+        public next?: LinkedListNode<T>
     ) {
         this._parent = parent;
     }
@@ -43,36 +45,35 @@ class LinkedListNode<T> implements IInternalLinkedListNode<T> {
     }
 }
 
-export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T>>
-    implements ILinkedList<T> {
-
+export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T>> {
     private _length: number = 0;
     private _first?: LinkedListNode<T>;
     private _last?: LinkedListNode<T>;
+
     // Nodes and values generators implementation
     private *_forwardsNodesIterator() {
-        let current = this._first;
+        let current = this.first;
         while (current) {
             let reset = yield current;
             current = !reset ? current.next : this._first;
         }
     }
     private *_backwardsNodesIterator() {
-        let current = this._last;
+        let current = this.last;
         while (current) {
             let reset = yield current;
             current = !reset ? current.prev : this._last;
         }
     }
     private *_forwardsValuesIterator() {
-        let current = this._first;
+        let current = this.first;
         while (current) {
             let reset = yield current.value;
             current = !reset ? current.next : this._first;
         }
     }
     private *_backwardsValuesIterator() {
-        let current = this._last;
+        let current = this.last;
         while (current) {
             let reset = yield current.value;
             current = !reset ? current.prev : this._last;
@@ -132,8 +133,8 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         }
         let iterator = values[Symbol.iterator](),
             current = iterator.next(),
-            firstNode: IInternalLinkedListNode<T> | undefined = undefined,
-            currentNode: IInternalLinkedListNode<T> | undefined = undefined;
+            firstNode: LinkedListNode<T> | undefined = undefined,
+            currentNode: LinkedListNode<T> | undefined = undefined;
         if (!current.done) {
             currentNode = firstNode = new LinkedListNode<T>(this, current.value);
             this._prepend(firstNode, before);
@@ -159,11 +160,14 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         }
         return currentNode !== after ? currentNode : undefined;
     }
-
-    public reverse() {
+    /**
+     * Reverses linked list (mutates data).
+     * Returns itself.
+     */
+    public reverse(): LinkedList<T> {
         let prev = this._first,
             current = prev ? prev.next : undefined,
-            next: IInternalLinkedListNode<T> | undefined;
+            next: LinkedListNode<T> | undefined;
         while (current) {
             next = current.next;
 
@@ -178,6 +182,8 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
             this._first.prev = undefined;
             this._last!.next = undefined;
         }
+
+        return this;
     }
 
     public removeFirst() {
@@ -199,13 +205,13 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         }
         else {
             this.filter(x => x.value === obj)
-                .forEach(x => this._remove(x as IInternalLinkedListNode<T>));
+                .forEach(x => this._remove(x as LinkedListNode<T>));
         }
         return this;
     }
 
-    public removeMany(values: Iterable<T>): ILinkedList<T>;
-    public removeMany(nodes: Iterable<ILinkedListNode<T>>): ILinkedList<T>;
+    public removeMany(values: Iterable<T>): LinkedList<T>;
+    public removeMany(nodes: Iterable<ILinkedListNode<T>>): LinkedList<T>;
     public removeMany(objects: Iterable<T | ILinkedListNode<T>>) {
         for (let obj of objects) {
             this.remove(obj);
@@ -214,22 +220,22 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
     }
 
     /** Clears list entirely */
-    public removeAll(): ILinkedList<T>;
+    public removeAll(): LinkedList<T>;
     /** Removes all nodes that satisfy condition */
-    public removeAll(callback: IPredicateCallback<ILinkedListNode<T>>, thisArg?: any): ILinkedList<T>;
+    public removeAll(callback: IPredicateCallback<ILinkedListNode<T>>, thisArg?: any): LinkedList<T>;
     public removeAll(callback?: IPredicateCallback<ILinkedListNode<T>>, thisArg?: any) {
         let nodesToRemove = callback ? this.filter(callback, thisArg) : this;
         for (let node of nodesToRemove) {
-            this._remove(node as IInternalLinkedListNode<T>);
+            this._remove(node as LinkedListNode<T>);
         }
         return this;
     }
 
     // Internal node typeguard; Mummy knows her children. Don't shit with her!
-    protected _isThisNode(node: any): node is IInternalLinkedListNode<T> {
+    protected _isThisNode(node: any): node is LinkedListNode<T> {
         return (node instanceof LinkedListNode) && node.parent === this;
     }
-    private _remove(node: IInternalLinkedListNode<T>) {
+    private _remove(node: LinkedListNode<T>) {
         let prev = node.prev,
             next = node.next;
         if (prev) {
@@ -247,7 +253,7 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         node.invalidate();
         this._length--;
     }
-    private _prepend(node: IInternalLinkedListNode<T>, before?: IInternalLinkedListNode<T>): IInternalLinkedListNode<T> {
+    private _prepend(node: LinkedListNode<T>, before?: LinkedListNode<T>): LinkedListNode<T> {
         let current = before || this._first;
         if (current) {
             let prev = current.prev;
@@ -267,7 +273,7 @@ export default class LinkedList<T> extends XBidirectedIterable<ILinkedListNode<T
         this._length++;
         return node;
     }
-    private _append(node: IInternalLinkedListNode<T>, after?: IInternalLinkedListNode<T>): IInternalLinkedListNode<T> {
+    private _append(node: LinkedListNode<T>, after?: LinkedListNode<T>): LinkedListNode<T> {
         let current = after || this._last;
         if (current) {
             let next = current.next;

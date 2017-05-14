@@ -48,30 +48,7 @@ interface IIterable<T> extends Iterable<T> {
 
 export default IIterable;
 
-// Here comes killer feature:
-
 /** Allows iteration in backwards direction */
 export interface IBidirectedIterable<T> extends IIterable<T> {
     readonly backwards: IIterable<T>;
-}
-
-// And another killer feature:
-
-/** Supports iterable iterators and chaining */
-export interface IXIterable<T> extends IIterable<T> {
-    [Symbol.iterator](): IXIterableIterator<T>;
-    filter(callback: IPredicateCallback<T>, thisArg?: any): IXIterableIterator<T>;
-    map<U>(callback: IMapCallback<T, U>, thisArg?: any): IXIterableIterator<U>;
-}
-
-export interface IXIterableIterator<T>
-    extends IXIterable<T>, IterableIterator<T> {
-
-    [Symbol.iterator](): IXIterableIterator<T>;
-}
-
-/** Supports iteration in backwards direction */
-export interface IXBidirectedIterable<T> extends IXIterable<T> {
-    // I don't see much sense in implementing backwards chaining
-    readonly backwards: IXIterable<T>;
 }
